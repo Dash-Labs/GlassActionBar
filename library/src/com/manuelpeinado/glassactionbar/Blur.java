@@ -1,13 +1,7 @@
 package com.manuelpeinado.glassactionbar;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.os.Build.VERSION;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptIntrinsicBlur;
 
 // Code borrowed from Nicolas Pomepuy
 // https://github.com/PomepuyN/BlurEffectForAndroidDesign
@@ -17,22 +11,30 @@ public class Blur {
         return apply(context, sentBitmap, GlassActionBar.DEFAULT_BLUR_RADIUS);
     }
 
-    @SuppressLint("NewApi")
+    //Lint is used for SDK >= 16
+    //@SuppressLint("NewApi")
     public static Bitmap apply(Context context, Bitmap sentBitmap, int radius) {
-        if (VERSION.SDK_INT > 16) {
-            Bitmap bitmap = sentBitmap.copy(sentBitmap.getConfig(), true);
+    	
+    	/*
+    	 *	Class ScrptIntrinsicBlur required minimum SDK of 17, which is higher than
+    	 *	minimum SDK of Dash (14).
+    	 *
+    	 **/
+    	
+        /*if (VERSION.SDK_INT > 16) {
+         Bitmap bitmap = sentBitmap.copy(sentBitmap.getConfig(), true);
 
-            final RenderScript rs = RenderScript.create(context);
-            final Allocation input = Allocation.createFromBitmap(rs, sentBitmap, Allocation.MipmapControl.MIPMAP_NONE,
-                    Allocation.USAGE_SCRIPT);
-            final Allocation output = Allocation.createTyped(rs, input.getType());
-            final ScriptIntrinsicBlur script = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
-            script.setRadius(radius);
-            script.setInput(input);
-            script.forEach(output);
-            output.copyTo(bitmap);
-            return bitmap;
-        }
+         final RenderScript rs = RenderScript.create(context);
+         final Allocation input = Allocation.createFromBitmap(rs, sentBitmap, Allocation.MipmapControl.MIPMAP_NONE,
+         Allocation.USAGE_SCRIPT);
+         final Allocation output = Allocation.createTyped(rs, input.getType());
+         final ScriptIntrinsicBlur script = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
+         script.setRadius(radius);
+         script.setInput(input);
+         script.forEach(output);
+         output.copyTo(bitmap);
+         return bitmap;
+         }*/
 
         // Stack Blur v1.0 from
         // http://www.quasimondo.com/StackBlurForCanvas/StackBlurDemo.html
@@ -62,13 +64,13 @@ public class Blur {
         //
         // Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>
 
-        Bitmap bitmap = sentBitmap.copy(sentBitmap.getConfig(), true);
+    	Bitmap bitmap = sentBitmap.copy(sentBitmap.getConfig(), true);
 
-        if (radius < 1) {
+    	if (radius < 1) {
             return (null);
         }
 
-        int w = bitmap.getWidth();
+    	int w = bitmap.getWidth();
         int h = bitmap.getHeight();
 
         int[] pix = new int[w * h];
@@ -128,7 +130,6 @@ public class Blur {
             stackpointer = radius;
 
             for (x = 0; x < w; x++) {
-
                 r[yi] = dv[rsum];
                 g[yi] = dv[gsum];
                 b[yi] = dv[bsum];

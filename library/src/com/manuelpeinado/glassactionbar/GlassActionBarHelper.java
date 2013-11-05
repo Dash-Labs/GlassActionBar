@@ -18,6 +18,7 @@ package com.manuelpeinado.glassactionbar;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.util.TypedValue;
@@ -32,10 +33,32 @@ import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.ScrollView;
+import android.widget.TextView;
 
 import com.cyrilmottier.android.translucentactionbar.NotifyingScrollView;
 import com.cyrilmottier.android.translucentactionbar.NotifyingScrollView.OnScrollChangedListener;
 import com.manuelpeinado.glassactionbar.ListViewScrollObserver.OnListViewScrollListener;
+
+
+/**
+ *	This class is modified based on ManuelPeinado's GlassActionBar library (See https://github.com/ManuelPeinado/GlassActionBar).
+ *
+ *	Add reference to list header view so that we can activate blur effect after scrolling to certain point.
+ *
+ *	Basic idea:
+ *	Set background of action bar to null.
+ *
+ *	This helper will put a image view, which is the blur part, and a text view, the action bar title part in the place of 
+ *	original action bar.
+ *
+ *	Before we scroll to the boundary of list header, action bar will display as transparent with alpha value changing from 0 to its maximum value.
+ *
+ *	When scroll below boundary, action bar will blur its background. Set background of text view to completely transparent.
+ *
+ *	This helper also applies to scroll view, see NotifyingScrollView.
+ *
+ *	Remember, not to put a list view into scroll view.
+ */
 
 public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollChangedListener, BlurTask.Listener, OnListViewScrollListener {
     private int contentLayout;
@@ -47,7 +70,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
     private int width;
     private int height;
     private Bitmap scaled;
-    private int blurRadius = GlassActionBar.DEFAULT_BLUR_RADIUS;
+    private int blurRadius = GlassActionBar.MIN_BLUR_RADIUS+1;
     private BlurTask blurTask;
     private int lastScrollPosition = -1;
     private NotifyingScrollView scrollView;
@@ -56,18 +79,50 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
     private static final String TAG = "GlassActionBarHelper";
     private boolean verbose = GlassActionBar.verbose;
     private Drawable windowBackground;
+	
+	//Text view of title in action bar
+	private TextView titleView;
+	private int title;
+	private int titleViewBackground = Color.GRAY;
+	
+	//The list header part of ListView
+	private ViewGroup listHeaderView;
 
     public GlassActionBarHelper contentLayout(int layout) {
         this.contentLayout = layout;
         return this;
     }
 
+    //Pass in list header view for alpha of action bar
+    public GlassActionBarHelper contentLayout(int layout, ViewGroup listHeaderView) {
+    	this.contentLayout = layout;
+    	this.listHeaderView = listHeaderView;
+    	return this;
+    }
+    
     public GlassActionBarHelper contentLayout(int layout, ListAdapter adapter) {
         this.contentLayout = layout;
         this.adapter = adapter;
         return this;
     }
+    
+    //Set the header of list view 
+    public void setListHeaderView(ViewGroup listHeaderView) {
+    	if (listView.getHeaderViewsCount() == 0) {
+    		listView.addHeaderView(listHeaderView);
+    	}
+    	
+    	this.listHeaderView = listHeaderView;
+    }
+    
+    public void setTitleText(int id) {
+    	title = id;
+    }
 
+    public void setActionBarBackground(int id) {
+    	titleViewBackground = id;
+    }
+    
     public View createView(Context context) {
         int[] attrs = { android.R.attr.windowBackground };
         
@@ -78,7 +133,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         TypedArray style = context.getTheme().obtainStyledAttributes(outValue.resourceId, attrs);
         windowBackground = style.getDrawable(0);
         style.recycle();
-            
+
         LayoutInflater inflater = LayoutInflater.from(context);
         frame = (FrameLayout) inflater.inflate(R.layout.gab__frame, null);
         content = inflater.inflate(contentLayout, (ViewGroup) frame, false);
@@ -87,6 +142,14 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         frame.getViewTreeObserver().addOnGlobalLayoutListener(this);
         blurredOverlay = (ImageView) frame.findViewById(R.id.blurredOverlay);
 
+        //Initialization of title
+        titleView = (TextView) frame.findViewById(R.id.blurred_action_bar_title);
+        if (title != 0) {
+        	titleView.setText(context.getString(title));
+        }
+        titleView.setBackgroundColor(titleViewBackground);
+        titleView.getBackground().setAlpha(0);
+        
         if (content instanceof NotifyingScrollView) {
             if (verbose) Log.v(TAG, "ScrollView content!");
             scrollView = (NotifyingScrollView) content;
@@ -94,7 +157,6 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         } else if (content instanceof ListView) {
             if (verbose) Log.v(TAG, "ListView content!");
             listView = (ListView) content;
-            listView.setAdapter(adapter);
             ListViewScrollObserver observer = new ListViewScrollObserver(listView);
             observer.setOnScrollUpAndDownListener(this);
         }
@@ -103,6 +165,14 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         return frame;
     }
 
+    public void setActionBarAlpha(int alpha) {
+    	titleView.getBackground().setAlpha(alpha);
+    }	
+    
+    public void setTitle(String title) {
+    	titleView.setText(title);
+    }
+    
     public void invalidate() {
         if (verbose) Log.v(TAG, "invalidate()");
         scaled = null;
@@ -162,11 +232,30 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         }
         content.measure(widthMeasureSpec, heightMeasureSpec);
         width = frame.getWidth();
-        height = content.getMeasuredHeight();
+        height = content.getHeight();
+        if (listView != null) {
+        	height = getTotalHeightofListView();
+            height += listHeaderView == null ? 0 : listHeaderView.getMeasuredHeight();
+        }
+        
         lastScrollPosition = scrollView != null ? scrollView.getScrollY() : 0; 
         invalidate();
     }
 
+    private int getTotalHeightofListView() {
+
+        ListAdapter mAdapter = listView.getAdapter();
+        int listviewElementsheight = 0;
+        for (int i = 0; i < mAdapter.getCount(); i++) {
+            View mView = mAdapter.getView(i, null, listView);
+            mView.measure(
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+            listviewElementsheight += mView.getMeasuredHeight();
+        }
+        return listviewElementsheight;
+    }
+    
     private void computeBlurOverlay() {
         if (verbose) Log.v(TAG, "computeBlurOverlay()");
         if (scaled != null) {
@@ -259,6 +348,22 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
 
     private void onNewScroll(int t) {
         if (verbose) Log.v(TAG, "onNewScroll() - new scroll position is " + t);
+        
+        if (listHeaderView != null) {
+        	//Use scroll position t instead of listHeaderView.getLocalRect()
+        	//Because when user scrolls fast, listHeaderView.getTop() may return incorrect value
+        	float scrollOffset = (float) Math.abs(listHeaderView.getTop()) / listHeaderView.getHeight();
+        	int alpha = Math.min((int)(200 * scrollOffset), 200);
+        	if (t < listHeaderView.getHeight()) {
+        		//Remove blur effect, set action bar darker
+        		blurredOverlay.setVisibility(View.INVISIBLE);
+            	titleView.getBackground().setAlpha(alpha);
+        	} else {
+        		//titleView.getBackground().setAlpha(0);
+    	        blurredOverlay.setVisibility(View.VISIBLE);
+        	}
+        }
+        
         updateBlurOverlay(t, false);
     }
 
