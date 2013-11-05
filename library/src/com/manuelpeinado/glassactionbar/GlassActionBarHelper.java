@@ -48,7 +48,7 @@ import com.manuelpeinado.glassactionbar.ListViewScrollObserver.OnListViewScrollL
  *	Basic idea:
  *	Set background of action bar to null.
  *
- *	This helper will put a image view, which is the blur part, and a text view, the action bar title part in the place of
+ *	This helper will put a image view, which is the blur part, and a text view, the action bar title part in the place of 
  *	original action bar.
  *
  *	Before we scroll to the boundary of list header, action bar will display as transparent with alpha value changing from 0 to its maximum value.
@@ -87,7 +87,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
 	
 	//The list header part of ListView
 	private ViewGroup listHeaderView;
-    
+
     public GlassActionBarHelper contentLayout(int layout) {
         this.contentLayout = layout;
         return this;
@@ -106,7 +106,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         return this;
     }
     
-    //Set the header of list view
+    //Set the header of list view 
     public void setListHeaderView(ViewGroup listHeaderView) {
     	if (listView.getHeaderViewsCount() == 0) {
     		listView.addHeaderView(listHeaderView);
@@ -118,7 +118,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
     public void setTitleText(int id) {
     	title = id;
     }
-    
+
     public void setActionBarBackground(int id) {
     	titleViewBackground = id;
     }
@@ -126,19 +126,19 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
     public View createView(Context context) {
         int[] attrs = { android.R.attr.windowBackground };
         
-        // Need to get resource id of style pointed to from actionBarStyle
+     // Need to get resource id of style pointed to from actionBarStyle
         TypedValue outValue = new TypedValue();
         context.getTheme().resolveAttribute(android.R.attr.windowBackground, outValue, true);
         
         TypedArray style = context.getTheme().obtainStyledAttributes(outValue.resourceId, attrs);
         windowBackground = style.getDrawable(0);
         style.recycle();
-        
+
         LayoutInflater inflater = LayoutInflater.from(context);
         frame = (FrameLayout) inflater.inflate(R.layout.gab__frame, null);
         content = inflater.inflate(contentLayout, (ViewGroup) frame, false);
         frame.addView(content, 0);
-        
+
         frame.getViewTreeObserver().addOnGlobalLayoutListener(this);
         blurredOverlay = (ImageView) frame.findViewById(R.id.blurredOverlay);
         
@@ -160,14 +160,14 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
             ListViewScrollObserver observer = new ListViewScrollObserver(listView);
             observer.setOnScrollUpAndDownListener(this);
         }
-        
+
         actionBarHeight = getActionBarHeight(context);
         return frame;
     }
-    
+
     public void setActionBarAlpha(int alpha) {
     	titleView.getBackground().setAlpha(alpha);
-    }
+    }	
     
     public void setTitle(String title) {
     	titleView.setText(title);
@@ -179,7 +179,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         computeBlurOverlay();
         updateBlurOverlay(lastScrollPosition, true);
     }
-    
+
     public void setBlurRadius(int newValue) {
         if (!GlassActionBar.isValidBlurRadius(newValue)) {
             throw new IllegalArgumentException("Invalid blur radius");
@@ -190,11 +190,11 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         blurRadius = newValue;
         invalidate();
     }
-    
+
     public int getBlurRadius() {
         return blurRadius;
     }
-    
+
     public void setDownsampling(int newValue) {
         if (!GlassActionBar.isValidDownsampling(newValue)) {
             throw new IllegalArgumentException("Invalid downsampling");
@@ -205,17 +205,17 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         downSampling = newValue;
         invalidate();
     }
-    
+
     public int getDownsampling() {
         return downSampling;
     }
-    
+
     protected int getActionBarHeight(Context context) {
         TypedValue outValue = new TypedValue();
         context.getTheme().resolveAttribute(android.R.attr.actionBarSize, outValue, true);
         return context.getResources().getDimensionPixelSize(outValue.resourceId);
     }
-    
+
     @Override
     public void onGlobalLayout() {
         if (verbose) Log.v(TAG, "onGlobalLayout()");
@@ -223,7 +223,6 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
             if (verbose) Log.v(TAG, "onGlobalLayout() - returning because not first time it's called");
             return;
         }
-        
         int widthMeasureSpec = MeasureSpec.makeMeasureSpec(frame.getWidth(), MeasureSpec.AT_MOST);
         int heightMeasureSpec;
         if (listView != null) {
@@ -234,25 +233,24 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         content.measure(widthMeasureSpec, heightMeasureSpec);
         width = frame.getWidth();
         height = content.getHeight();
-        
         if (listView != null) {
         	height = getTotalHeightofListView();
             height += listHeaderView == null ? 0 : listHeaderView.getMeasuredHeight();
         }
         
-        lastScrollPosition = scrollView != null ? scrollView.getScrollY() : 0;
+        lastScrollPosition = scrollView != null ? scrollView.getScrollY() : 0; 
         invalidate();
     }
-    
+
     private int getTotalHeightofListView() {
-        
+
         ListAdapter mAdapter = listView.getAdapter();
         int listviewElementsheight = 0;
         for (int i = 0; i < mAdapter.getCount(); i++) {
             View mView = mAdapter.getView(i, null, listView);
             mView.measure(
-                          MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
-                          MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
             listviewElementsheight += mView.getMeasuredHeight();
         }
         return listviewElementsheight;
@@ -271,21 +269,21 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
             if (verbose) Log.v(TAG, "computeBlurOverlay() - scroll position is " + scrollPosition);
         }
         long start = System.nanoTime();
-        
+
         scaled = Utils.drawViewToBitmap(scaled, content, width, height, downSampling, windowBackground);
-        
+
         long delta = System.nanoTime() - start;
         if (verbose) Log.v(TAG, "computeBlurOverlay() - drawing layout to canvas took " + delta/1e6f + " ms");
-        
+
         if (verbose) Log.v(TAG, "computeBlurOverlay() - starting blur task");
         startBlurTask();
-        
+
         if (scrollView != null) {
             if (verbose) Log.v(TAG, "computeBlurOverlay() - restoring scroll from " + scrollView.getScrollY() + " to " + scrollPosition);
             scrollView.scrollTo(0, scrollPosition);
         }
     }
-    
+
     private void startBlurTask() {
         if (verbose) Log.v(TAG, "startBlurTask()");
         if (blurTask != null) {
@@ -294,15 +292,15 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         }
         blurTask = new BlurTask(frame.getContext(), this, scaled, blurRadius);
     }
-    
+
     private void updateBlurOverlay(int top, boolean force) {
         if (verbose) Log.v(TAG, "updateBlurOverlay() - top=" + top);
-        
+
         if (scaled == null) {
             if (verbose) Log.v(TAG, "updateBlurOverlay() - returning because scaled is null");
             return;
         }
-        
+
         if (top < 0) {
             if (verbose) Log.v(TAG, "updateBlurOverlay() - clamping top to 0");
             top = 0;
@@ -313,7 +311,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         }
         lastScrollPosition = top;
         Bitmap actionBarSection = Bitmap.createBitmap(scaled, 0, top / downSampling, width / downSampling,
-                                                      actionBarHeight / downSampling);
+                actionBarHeight / downSampling);
         // Blur here until background finished (will make smooth jerky during the first second or so).
         Bitmap blurredBitmap;
         if (isBlurTaskFinished()) {
@@ -328,17 +326,17 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         actionBarSection.recycle();
         blurredOverlay.setImageBitmap(enlarged);
     }
-    
+
     private boolean isBlurTaskFinished() {
         return blurTask == null;
     }
-    
+
     @Override
     public void onScrollChanged(ScrollView who, int l, int t, int oldl, int oldt) {
         // ScrollView scroll
         onNewScroll(t);
     }
-    
+
     @Override
     public void onScrollUpDownChanged(int delta, int scrollPosition, boolean exact) {
         // ListView scroll
@@ -347,7 +345,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
             onNewScroll(-scrollPosition);
         }
     }
-    
+
     private void onNewScroll(int t) {
         if (verbose) Log.v(TAG, "onNewScroll() - new scroll position is " + t);
         
@@ -368,7 +366,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         
         updateBlurOverlay(t, false);
     }
-    
+
     @Override
     public void onBlurOperationFinished() {
         if (verbose) Log.v(TAG, "onBlurOperationFinished() - blur operation finished");
@@ -376,9 +374,9 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         updateBlurOverlay(lastScrollPosition, true);
         // Utils.saveToSdCard(scaled, "blurred.png");
     }
-    
+
     @Override
     public void onScrollIdle() {
     }
-    
+
 }
