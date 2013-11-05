@@ -3,7 +3,7 @@
     package="com.manuelpeinado.glassactionbar">
 
     <uses-sdk
-        android:targetSdkVersion="18" />
+        android:targetSdkVersion="14" />
     <application />
 
 </manifest>
