@@ -92,7 +92,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
         this.contentLayout = layout;
         return this;
     }
-    
+
     //Pass in list header view for alpha of action bar
     public GlassActionBarHelper contentLayout(int layout, ViewGroup listHeaderView) {
     	this.contentLayout = layout;
@@ -141,7 +141,7 @@ public class GlassActionBarHelper implements OnGlobalLayoutListener, OnScrollCha
 
         frame.getViewTreeObserver().addOnGlobalLayoutListener(this);
         blurredOverlay = (ImageView) frame.findViewById(R.id.blurredOverlay);
-        
+
         //Initialization of title
         titleView = (TextView) frame.findViewById(R.id.blurred_action_bar_title);
         if (title != 0) {
